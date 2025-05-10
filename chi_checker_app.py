@@ -18,9 +18,12 @@ if uploaded_file:
         df.columns = df.columns.str.strip()
 
         # Check necessary columns
-        required_cols = ["SCIENTIFIC NAME", "DESCRIPTION CODE 
-(ACTIVE INGREDIENT- STRENGTH-PHARMACEUTICAL FORM)",
-                         "ICD 10 CODE", "INDICATION"]
+        required_cols = [
+            "SCIENTIFIC NAME",
+            "DESCRIPTION CODE (ACTIVE INGREDIENT- STRENGTH-PHARMACEUTICAL FORM)",
+            "ICD 10 CODE",
+            "INDICATION"
+        ]
         if not all(col in df.columns for col in required_cols):
             st.error("Excel file is missing one or more required columns.")
         else:
