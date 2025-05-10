@@ -14,18 +14,21 @@ if uploaded_file:
         # Load the Excel sheet, skipping first 4 rows to get real headers
         df = pd.read_excel(uploaded_file, skiprows=4)
 
-        # Clean up column names
-        df.columns = df.columns.str.strip()
+        # Normalize column names: remove newlines and strip spaces
+        df.columns = df.columns.str.replace("\n", " ").str.strip()
 
-        # Check necessary columns
+        # Define expected column names
         required_cols = [
             "SCIENTIFIC NAME",
             "DESCRIPTION CODE (ACTIVE INGREDIENT- STRENGTH-PHARMACEUTICAL FORM)",
             "ICD 10 CODE",
             "INDICATION"
         ]
-        if not all(col in df.columns for col in required_cols):
-            st.error("Excel file is missing one or more required columns.")
+
+        # Check for missing columns
+        missing = [col for col in required_cols if col not in df.columns]
+        if missing:
+            st.error(f"Excel file is missing the following required columns: {', '.join(missing)}")
         else:
             # Input section
             drug_input = st.text_input("Enter Drug Scientific Name:")
