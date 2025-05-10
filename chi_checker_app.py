@@ -1,36 +1,44 @@
+
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="CHI Drug Compatibility Checker", layout="wide")
+st.set_page_config(page_title="CHI Drug Checker", layout="centered")
+
 st.title("CHI Drug Compatibility Checker")
 
 # Upload Excel file
 uploaded_file = st.file_uploader("Upload CHI Drug Formulary Excel File", type=["xlsx"])
+
 if uploaded_file:
     try:
-        df = pd.read_excel(uploaded_file)
-        df['Scientific Name'] = df['Scientific Name'].str.lower()
-        df['Indication'] = df['Indication'].astype(str).str.lower()
-        df['ICD10 Code'] = df['ICD10 Code'].astype(str).str.upper()
-        st.success("Excel file loaded successfully!")
+        # Load the Excel sheet, skipping first 4 rows to get real headers
+        df = pd.read_excel(uploaded_file, skiprows=4)
 
-        # Input fields
-        drug_name = st.text_input("Enter Drug Name (e.g. amoxicillin)").lower()
-        diagnosis = st.text_input("Enter Diagnosis or ICD-10 Code (e.g. J01 or sinusitis)").lower()
+        # Clean up column names
+        df.columns = df.columns.str.strip()
 
-        if st.button("Check Compatibility"):
-            filtered = df[df['Scientific Name'].str.contains(drug_name, na=False)]
-            result = filtered[
-                filtered['ICD10 Code'].str.contains(diagnosis.upper(), na=False) |
-                filtered['Indication'].str.contains(diagnosis, na=False)
-            ]
+        # Check necessary columns
+        required_cols = ["SCIENTIFIC NAME", "DESCRIPTION CODE 
+(ACTIVE INGREDIENT- STRENGTH-PHARMACEUTICAL FORM)",
+                         "ICD 10 CODE", "INDICATION"]
+        if not all(col in df.columns for col in required_cols):
+            st.error("Excel file is missing one or more required columns.")
+        else:
+            # Input section
+            drug_input = st.text_input("Enter Drug Scientific Name:")
+            diagnosis_input = st.text_input("Enter Diagnosis or ICD 10 Code:")
 
-            if not result.empty:
-                st.write(f"### {len(result)} Result(s) Found:")
-                st.dataframe(result[['Scientific Name', 'Description Code', 'ICD10 Code', 'Indication']])
-            else:
-                st.warning("No compatible match found.")
+            if st.button("Check Compatibility"):
+                matches = df[
+                    df["SCIENTIFIC NAME"].str.contains(drug_input, case=False, na=False) &
+                    (df["ICD 10 CODE"].astype(str).str.contains(diagnosis_input, case=False, na=False) |
+                     df["INDICATION"].str.contains(diagnosis_input, case=False, na=False))
+                ]
+
+                if not matches.empty:
+                    st.success(f"Match found! {len(matches)} record(s) compatible:")
+                    st.dataframe(matches[required_cols])
+                else:
+                    st.warning("No compatible drug found for this diagnosis.")
     except Exception as e:
         st.error(f"Failed to load Excel: {e}")
-else:
-    st.info("Please upload the CHI Drug Formulary Excel file to begin.")
